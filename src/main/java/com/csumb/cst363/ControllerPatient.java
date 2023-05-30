@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.sql.*;
+import java.time.LocalDate;
 
 /*
  * Controller class for patient interactions.
@@ -37,8 +38,15 @@ public class ControllerPatient {
     @PostMapping("/patient/new")
     public String newPatient(Patient p, Model model) throws SQLException {
 
-        // Validate primaryName field
+    	// Validate primaryName field
         if (!isPrimaryCareSpecialist(p.getPrimaryName())) {
+            model.addAttribute("message", "Error: Invalid primary care specialist.");
+            model.addAttribute("patient", p);
+            return "patient_register";
+        }
+        
+        int patientAge = calculateAge(p.getBirthdate());
+        if (!isPrimaryPediatrician(p.getPrimaryName(), patientAge)) {
             model.addAttribute("message", "Error: Invalid primary care specialist.");
             model.addAttribute("patient", p);
             return "patient_register";
@@ -82,6 +90,12 @@ public class ControllerPatient {
         // Validate zipcode
         if (!isValidZipcode(p.getZipcode())) {
             model.addAttribute("message", "Error: Invalid zipcode.");
+            model.addAttribute("patient", p);
+            return "patient_register";
+        }
+
+        if (!isSSN(p.getSsn())) {
+            model.addAttribute("message", "Error: Invalid ssn.");
             model.addAttribute("patient", p);
             return "patient_register";
         }
@@ -259,10 +273,10 @@ public class ControllerPatient {
     }
 
 
-    private boolean isPrimaryCareSpecialist(String firstName) throws SQLException {
+    private boolean isPrimaryCareSpecialist(String lastName) throws SQLException {
         try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) AS count FROM Doctor WHERE first_name = ? AND specialty IN ('Family Medicine', 'Internal Medicine', 'Pediatrics')")) {
-            ps.setString(1, firstName);
+             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) AS count FROM Doctor WHERE last_name = ? AND specialty IN ('Family Medicine', 'Internal Medicine', 'Pediatrics')")) {
+            ps.setString(1, lastName);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 int count = rs.getInt("count");
@@ -270,6 +284,25 @@ public class ControllerPatient {
             }
         }
         return false;
+    }
+    
+    private int calculateAge(String birthdate) {
+	 // Extract year, month, and day from the birthdate string
+	    String[] parts = birthdate.split("-");
+	    int birthYear = Integer.parseInt(parts[0]);
+	    int birthMonth = Integer.parseInt(parts[1]);
+	    int birthDay = Integer.parseInt(parts[2]);
+	
+	    // Get the current date
+	    LocalDate currentDate = LocalDate.now();
+	
+	    // Calculate the age based on the birthdate and current date
+	    int age = currentDate.getYear() - birthYear;
+	    if (birthMonth > currentDate.getMonthValue() ||
+	        (birthMonth == currentDate.getMonthValue() && birthDay > currentDate.getDayOfMonth())) {
+	        age--; // Subtract 1 if the birthdate hasn't occurred yet this year
+	    }
+	    return age;
     }
 
     private boolean isValidName(String name) {
@@ -284,7 +317,9 @@ public class ControllerPatient {
         return zipcode != null && zipcode.matches("^\\d{5}(-\\d{4})?$");
     }
 
-
+    private boolean isSSN(String ssn) {
+        return ssn != null && ssn.matches("^\\d{9}$");
+    }
 
     /*
      * return JDBC Connection using jdbcTemplate in Spring Server
