@@ -29,6 +29,11 @@ public class DataGenerate {
 			ResultSet rs;
 			int id;
 			int row_count;
+			
+			// Delete all prescription rows
+			ps = conn.prepareStatement("delete from prescription");
+			row_count = ps.executeUpdate();
+			System.out.println("rows deleted from prescription: "+row_count);
 			// Delete all doctor rows
 			ps = conn.prepareStatement("delete from doctor");
 			row_count = ps.executeUpdate();
@@ -37,10 +42,7 @@ public class DataGenerate {
 			ps = conn.prepareStatement("delete from patient");
 			row_count = ps.executeUpdate();
 			System.out.println("rows deleted from patient: "+row_count);
-			// Delete all prescription rows
-			ps = conn.prepareStatement("delete from prescription");
-			row_count = ps.executeUpdate();
-			System.out.println("rows deleted from prescription: "+row_count);
+
 			// Prepare statements for insertion
 			String sqlInsertDoctor = "insert into doctor(last_name, first_name, specialty, practice_since, ssn) values(?, ?, ?, ?, ?)";
 	
@@ -68,7 +70,9 @@ public class DataGenerate {
 				ssn = Integer.toString(123450000+gen.nextInt(10000));
 				ps.setString(4, ssn);
 				patientSSNs.add(ssn);
-				String birthdate = "19" + (50+gen.nextInt(72))+ "-" +(1+gen.nextInt(12))+ "-" + (1+gen.nextInt(28));
+				
+				int birthYear = 1900 + gen.nextInt(123);
+				String birthdate = birthYear + "-" + (1+gen.nextInt(12)) + "-" + (1+gen.nextInt(28));
 	
 				ps.setString(1, "Patient Last"+k);
 				ps.setString(2, "Patient First"+k);
