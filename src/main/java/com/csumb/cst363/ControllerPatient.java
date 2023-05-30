@@ -210,6 +210,13 @@ public class ControllerPatient {
             model.addAttribute("patient", p);
             return "patient_edit";
         }
+        
+        int patientAge = calculateAge(p.getBirthdate());
+        if (!isPrimaryPediatrician(p.getPrimaryName(), patientAge)) {
+            model.addAttribute("message", "Error: Invalid primary care specialist.");
+            model.addAttribute("patient", p);
+            return "patient_register";
+        }        
 
         // Validate city
         if (!isValidName(p.getCity())) {
